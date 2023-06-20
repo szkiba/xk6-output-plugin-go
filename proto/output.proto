@@ -1,0 +1,113 @@
+// SPDX-FileCopyrightText: 2023 Iván Szkiba
+//
+// SPDX-License-Identifier: MIT
+
+syntax = "proto3";
+
+package xk6_output_plugin.output;
+option go_package="github.com/szkiba/xk6-output-plugin-go/output";
+
+// InitRequest contains the parameters of the Init method.
+message InitRequest {
+  Params params = 1;
+}
+
+// Params contains all possible parameters an output plugin may need.
+message Params {
+  map<string, string> environment = 1; // k6's environment variables.
+}
+
+// Info contains a description of the plugin and xk6-output-plugin configuration parameters.
+message Info {
+  string description = 1; // A human-readable description of the output that will be shown in `k6 run`.
+  uint32 buffering = 2;   // Sample buffering duration in milliseconds.
+}
+
+// InitResponse contains the return value of the Init method.
+message InitResponse {
+  Info info = 1;
+}
+
+// Empty is used as a parameter for parameterless methods and as a return value for methods without a return value.
+message Empty{}
+
+// AddMetricsRequest contains the parameters of the AddMetrics method.
+message AddMetricsRequest {
+  repeated Metric metrics = 1;
+}
+
+// AddSamplesRequest contains the parameters of the AddSamples method.
+message AddSamplesRequest {
+  repeated Sample samples = 1;
+}
+
+// A MetricType specifies the type of a metric.
+enum MetricType {
+  METRIC_TYPE_UNSPECIFIED = 0; // Unspecified value.
+
+  COUNTER = 1; // A counter that sums its data points
+  GAUGE   = 2; // A gauge that displays the latest value
+  TREND   = 3; // A trend, min/max/avg/med are interesting
+  RATE    = 4; // A rate, displays % of values that aren't 0
+}
+
+// ValueType holds the type of values a metric contains.
+enum ValueType {
+  VALUE_TYPE_UNSPECIFIED = 0; // Unspecified value.
+
+  DEFAULT = 1; // Values are presented as-is
+  TIME    = 2; // Values are time durations (milliseconds)
+  DATA    = 3; // Values are data amounts (bytes)
+}
+
+// A Metric defines the shape of a set of data.
+message Metric {
+  string          name       = 1; // The name of the metric.
+  MetricType      type       = 2; // The metric type.
+  ValueType       contains   = 3; // Information on the type of data collected.
+  bool            tainted    = 4; // Has this metric caused a threshold to fail?
+  repeated string thresholds = 5; // Are there any thresholds attached to this metric?
+  repeated Submetric submetrics = 6; // Any derived metrics created as a result of adding a threshold using tags.
+}
+
+// A Submetric represents a filtered dataset based on a parent metric.
+message Submetric {
+  string             name   = 1; // The name of the submetric.
+  string             suffix = 2;
+  map<string,string> tags   = 3; // Dictionary with tagname-tagvalue pairs that can be used when filtering results data.
+  Metric             metric = 4; // The parent metric.
+}
+
+// A Sample is a single metric measurement at a specific point in time. 
+message Sample {
+  string             metric   = 1; // The name of the metric.
+  int64              time     = 2; // Timestamp when the sample was collected.
+  double             value    = 3; // The actual data sample; time values are in milliseconds.
+  map<string,string> tags     = 4; // Dictionary with tagname-tagvalue pairs that can be used when filtering results data.
+  map<string,string> metadata = 5; // Optional high-cardinality metadata that won't be indexed in atlas.
+}
+
+// Output is the gRPC service to be implemented by output plugins.
+service Output {
+  // Init is called before registering the output plugin.
+  //
+  // Init receives the environment variables of the k6 process as parameters.
+  // In addition, standard command line arguments can be used to configure the plugin.
+  // A description of the plugin and various configuration parameters for the xk6-output-plugin can be returned.
+  rpc Init(InitRequest) returns (InitResponse);
+
+  // Start is called before the k6 Engine tries to use the output and should be
+  // used for any long initialization tasks.
+  rpc Start(Empty) returns (Empty);
+
+  // Flush all remaining metrics and finalize the test run.
+  rpc Stop(Empty) returns (Empty);
+
+  // AddMetrics is called on all metrics, the plugin can use it to save metric parameters.
+  //
+  // The call is made before AddSample is called with the given metric's sample.
+  rpc AddMetrics(AddMetricsRequest) returns (Empty);
+
+  // AddSamples receives samples of the metrics periodically.
+  rpc AddSamples(AddSamplesRequest) returns (Empty);
+}

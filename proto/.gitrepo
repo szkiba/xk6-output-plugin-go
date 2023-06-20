@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:szkiba/xk6-output-plugin-proto.git
+	branch = master
+	commit = c2fba7a96ae39832f2d3b7082005a0a9fed2b631
+	parent = 2931a77fc65d313b6e16d47423025e12c8d929db
+	method = merge
+	cmdver = 0.4.5
