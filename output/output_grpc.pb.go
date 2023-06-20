@@ -23,21 +23,33 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Output_Init_FullMethodName       = "/github.com.szkiba.xk6_output_plugin.output.Output/Init"
-	Output_Start_FullMethodName      = "/github.com.szkiba.xk6_output_plugin.output.Output/Start"
-	Output_Stop_FullMethodName       = "/github.com.szkiba.xk6_output_plugin.output.Output/Stop"
-	Output_AddMetrics_FullMethodName = "/github.com.szkiba.xk6_output_plugin.output.Output/AddMetrics"
-	Output_AddSamples_FullMethodName = "/github.com.szkiba.xk6_output_plugin.output.Output/AddSamples"
+	Output_Init_FullMethodName       = "/xk6_output_plugin.output.Output/Init"
+	Output_Start_FullMethodName      = "/xk6_output_plugin.output.Output/Start"
+	Output_Stop_FullMethodName       = "/xk6_output_plugin.output.Output/Stop"
+	Output_AddMetrics_FullMethodName = "/xk6_output_plugin.output.Output/AddMetrics"
+	Output_AddSamples_FullMethodName = "/xk6_output_plugin.output.Output/AddSamples"
 )
 
 // OutputClient is the client API for Output service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OutputClient interface {
+	// Init is called before registering the output plugin.
+	//
+	// Init receives the environment variables of the k6 process as parameters.
+	// In addition, standard command line arguments can be used to configure the plugin.
+	// A description of the plugin and various configuration parameters for the xk6-output-plugin can be returned.
 	Init(ctx context.Context, in *InitRequest, opts ...grpc.CallOption) (*InitResponse, error)
+	// Start is called before the k6 Engine tries to use the output and should be
+	// used for any long initialization tasks.
 	Start(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
+	// Flush all remaining metrics and finalize the test run.
 	Stop(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
+	// AddMetrics is called on all metrics, the plugin can use it to save metric parameters.
+	//
+	// The call is made before AddSample is called with the given metric's sample.
 	AddMetrics(ctx context.Context, in *AddMetricsRequest, opts ...grpc.CallOption) (*Empty, error)
+	// AddSamples receives samples of the metrics periodically.
 	AddSamples(ctx context.Context, in *AddSamplesRequest, opts ...grpc.CallOption) (*Empty, error)
 }
 
@@ -98,10 +110,22 @@ func (c *outputClient) AddSamples(ctx context.Context, in *AddSamplesRequest, op
 // All implementations must embed UnimplementedOutputServer
 // for forward compatibility
 type OutputServer interface {
+	// Init is called before registering the output plugin.
+	//
+	// Init receives the environment variables of the k6 process as parameters.
+	// In addition, standard command line arguments can be used to configure the plugin.
+	// A description of the plugin and various configuration parameters for the xk6-output-plugin can be returned.
 	Init(context.Context, *InitRequest) (*InitResponse, error)
+	// Start is called before the k6 Engine tries to use the output and should be
+	// used for any long initialization tasks.
 	Start(context.Context, *Empty) (*Empty, error)
+	// Flush all remaining metrics and finalize the test run.
 	Stop(context.Context, *Empty) (*Empty, error)
+	// AddMetrics is called on all metrics, the plugin can use it to save metric parameters.
+	//
+	// The call is made before AddSample is called with the given metric's sample.
 	AddMetrics(context.Context, *AddMetricsRequest) (*Empty, error)
+	// AddSamples receives samples of the metrics periodically.
 	AddSamples(context.Context, *AddSamplesRequest) (*Empty, error)
 	mustEmbedUnimplementedOutputServer()
 }
@@ -232,7 +256,7 @@ func _Output_AddSamples_Handler(srv interface{}, ctx context.Context, dec func(i
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Output_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "github.com.szkiba.xk6_output_plugin.output.Output",
+	ServiceName: "xk6_output_plugin.output.Output",
 	HandlerType: (*OutputServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
